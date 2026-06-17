@@ -4,126 +4,204 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MealCoach AI</title>
-
 <style>
 body{
-font-family: Arial,sans-serif;
-max-width:700px;
-margin:auto;
-padding:20px;
-background:#f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  background:#f4f6f8;
+  margin:0;
+  padding:20px;
+  color:#222;
 }
-
+.container{
+  max-width:720px;
+  margin:auto;
+}
+.header{
+  background:linear-gradient(135deg,#2ecc71,#27ae60);
+  color:white;
+  padding:22px;
+  border-radius:18px;
+  margin-bottom:18px;
+}
 .card{
-background:white;
-padding:15px;
-border-radius:10px;
-margin-bottom:15px;
-box-shadow:0 2px 5px rgba(0,0,0,0.1);
+  background:white;
+  padding:18px;
+  border-radius:16px;
+  margin-bottom:16px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
 }
-
+label{
+  font-weight:bold;
+  display:block;
+  margin-top:12px;
+}
 input,textarea{
-width:100%;
-padding:10px;
-margin-top:5px;
-margin-bottom:10px;
-box-sizing:border-box;
+  width:100%;
+  padding:12px;
+  margin-top:6px;
+  border:1px solid #ddd;
+  border-radius:10px;
+  box-sizing:border-box;
+  font-size:16px;
 }
-
+textarea{
+  min-height:70px;
+}
 button{
-width:100%;
-padding:15px;
-font-size:18px;
-border:none;
-border-radius:10px;
-cursor:pointer;
+  width:100%;
+  padding:16px;
+  font-size:18px;
+  font-weight:bold;
+  color:white;
+  background:#27ae60;
+  border:none;
+  border-radius:14px;
+  margin-top:18px;
 }
-
-.result{
-background:white;
-padding:15px;
-border-radius:10px;
-margin-top:15px;
+.score{
+  font-size:34px;
+  font-weight:bold;
+  color:#27ae60;
+}
+.tag{
+  background:#eafaf1;
+  padding:8px 10px;
+  border-radius:10px;
+  margin:6px 0;
+}
+.warning{
+  background:#fff4e5;
 }
 </style>
 </head>
-
 <body>
+<div class="container">
 
-<h1>🍱 MealCoach AI</h1>
-<p>今日の食事を入力してください</p>
-
-<div class="card">
-<label>体重(kg)</label>
-<input type="number" id="weight">
-
-<label>歩数</label>
-<input type="number" id="steps">
-
-<label>朝食</label>
-<textarea id="breakfast"></textarea>
-
-<label>昼食</label>
-<textarea id="lunch"></textarea>
-
-<label>夕食</label>
-<textarea id="dinner"></textarea>
-
-<button onclick="analyze()">診断する</button>
+<div class="header">
+  <h1>🍱 MealCoach AI</h1>
+  <p>今日の食事を入力すると、ダイエット目線で診断します。</p>
 </div>
 
-<div id="result" class="result"></div>
+<div class="card">
+  <label>体重（kg）</label>
+  <input type="number" id="weight" placeholder="例：65">
+
+  <label>歩数</label>
+  <input type="number" id="steps" placeholder="例：8500">
+
+  <label>朝食</label>
+  <textarea id="breakfast" placeholder="例：ご飯、納豆、卵、ヨーグルト"></textarea>
+
+  <label>昼食</label>
+  <textarea id="lunch" placeholder="例：鶏むね肉、白米、サラダ"></textarea>
+
+  <label>夕食</label>
+  <textarea id="dinner" placeholder="例：焼き魚、味噌汁、野菜"></textarea>
+
+  <button onclick="analyze()">診断する</button>
+</div>
+
+<div id="result"></div>
+
+</div>
 
 <script>
-
 function analyze(){
+  const weight = document.getElementById("weight").value;
+  const steps = Number(document.getElementById("steps").value) || 0;
+  const breakfast = document.getElementById("breakfast").value;
+  const lunch = document.getElementById("lunch").value;
+  const dinner = document.getElementById("dinner").value;
+  const text = (breakfast + " " + lunch + " " + dinner).toLowerCase();
 
-let weight=document.getElementById("weight").value;
-let steps=parseInt(document.getElementById("steps").value)||0;
+  let score = 60;
+  let good = [];
+  let bad = [];
+  let tomorrow = [];
 
-let breakfast=document.getElementById("breakfast").value;
-let lunch=document.getElementById("lunch").value;
-let dinner=document.getElementById("dinner").value;
+  const proteinWords = ["鶏","胸肉","ささみ","卵","納豆","豆腐","魚","鮭","まぐろ","ツナ","プロテイン","ヨーグルト","オイコス","肉"];
+  const vegWords = ["野菜","サラダ","ブロッコリー","ほうれん草","白菜","キャベツ","トマト","きのこ","わかめ","海藻"];
+  const fatWords = ["揚げ","唐揚げ","ポテト","ラーメン","ケーキ","菓子","チョコ","ピザ","ハンバーガー","マヨ","脂","焼肉"];
+  const carbWords = ["ご飯","白米","玄米","オートミール","さつまいも","そば","うどん","パン"];
 
-let score=60;
+  let proteinCount = proteinWords.filter(w => text.includes(w)).length;
+  let vegCount = vegWords.filter(w => text.includes(w)).length;
+  let fatCount = fatWords.filter(w => text.includes(w)).length;
+  let carbCount = carbWords.filter(w => text.includes(w)).length;
 
-if(steps>=8000) score+=15;
-if(steps>=10000) score+=10;
+  if(steps >= 8000){
+    score += 15;
+    good.push("歩数が8,000歩以上で活動量は良いです。");
+  }else{
+    score -= 10;
+    bad.push("歩数が少なめです。脂肪燃焼のために活動量を増やしましょう。");
+    tomorrow.push("まずは今日より＋2,000歩を目標にしましょう。");
+  }
 
-let text=(breakfast+lunch+dinner).toLowerCase();
+  if(proteinCount >= 3){
+    score += 15;
+    good.push("タンパク質をしっかり意識できています。");
+  }else if(proteinCount >= 1){
+    score += 5;
+    good.push("タンパク質は入っていますが、もう少し増やせると良いです。");
+    tomorrow.push("毎食、卵・魚・鶏肉・納豆・豆腐のどれかを入れましょう。");
+  }else{
+    score -= 15;
+    bad.push("タンパク質が不足している可能性があります。");
+    tomorrow.push("朝か昼に卵・納豆・鶏肉・魚を追加しましょう。");
+  }
 
-if(text.includes("卵")) score+=5;
-if(text.includes("納豆")) score+=5;
-if(text.includes("鶏")) score+=5;
-if(text.includes("サラダ")) score+=5;
-if(text.includes("野菜")) score+=5;
+  if(vegCount >= 2){
+    score += 10;
+    good.push("野菜・海藻類が入っていてバランスが良いです。");
+  }else{
+    score -= 5;
+    bad.push("野菜や食物繊維が少なめです。");
+    tomorrow.push("サラダ・味噌汁・海藻を1品追加しましょう。");
+  }
 
-if(score>100) score=100;
+  if(fatCount >= 2){
+    score -= 15;
+    bad.push("脂質が高くなりやすい内容です。翌日は調整しましょう。");
+    tomorrow.push("明日は揚げ物・ラーメン・菓子類を控えめにしましょう。");
+  }
 
-let good="タンパク質を意識できています。";
-let improve="野菜と水分を意識しましょう。";
-let tomorrow="8,000歩以上と毎食タンパク質を目標にしましょう。";
+  if(carbCount >= 1){
+    good.push("炭水化物も入っているので、極端な制限になっていません。");
+  }else{
+    bad.push("炭水化物が少なすぎる可能性があります。代謝低下に注意です。");
+  }
 
-if(steps<5000){
-improve="歩数が少なめです。活動量を増やしましょう。";
+  if(score > 100) score = 100;
+  if(score < 0) score = 0;
+
+  if(good.length === 0) good.push("食事記録をつけられていること自体が良いスタートです。");
+  if(bad.length === 0) bad.push("大きな崩れは少ないです。このまま継続しましょう。");
+  if(tomorrow.length === 0) tomorrow.push("明日もタンパク質・野菜・歩数を意識しましょう。");
+
+  document.getElementById("result").innerHTML = `
+    <div class="card">
+      <h2>診断結果</h2>
+      <div class="score">${score}点</div>
+      <p>体重：${weight ? weight + "kg" : "未入力"} / 歩数：${steps}歩</p>
+    </div>
+
+    <div class="card">
+      <h3>✅ 良かった点</h3>
+      ${good.map(item => `<div class="tag">${item}</div>`).join("")}
+    </div>
+
+    <div class="card">
+      <h3>⚠️ 改善点</h3>
+      ${bad.map(item => `<div class="tag warning">${item}</div>`).join("")}
+    </div>
+
+    <div class="card">
+      <h3>🎯 明日の課題</h3>
+      ${tomorrow.map(item => `<div class="tag">${item}</div>`).join("")}
+    </div>
+  `;
 }
-
-document.getElementById("result").innerHTML=
-`
-<h2>総合評価 ${score}点</h2>
-
-<h3>良い点</h3>
-<p>${good}</p>
-
-<h3>改善点</h3>
-<p>${improve}</p>
-
-<h3>明日の課題</h3>
-<p>${tomorrow}</p>
-`;
-
-}
-
 </script>
 
 </body>
