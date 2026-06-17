@@ -6,83 +6,116 @@
 <title>MealCoach AI</title>
 <style>
 body{
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  background:#f4f6f8;
   margin:0;
-  padding:20px;
+  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+  background:#f3f6f4;
   color:#222;
 }
 .container{
-  max-width:720px;
+  max-width:760px;
   margin:auto;
+  padding:18px;
 }
-.header{
-  background:linear-gradient(135deg,#2ecc71,#27ae60);
+.hero{
+  background:linear-gradient(135deg,#22c55e,#16a34a);
   color:white;
-  padding:22px;
-  border-radius:18px;
+  padding:24px;
+  border-radius:22px;
   margin-bottom:18px;
+}
+.hero h1{
+  margin:0 0 8px;
+  font-size:30px;
+}
+.hero p{
+  margin:0;
+  line-height:1.6;
 }
 .card{
   background:white;
+  border-radius:18px;
   padding:18px;
-  border-radius:16px;
   margin-bottom:16px;
-  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+  box-shadow:0 6px 18px rgba(0,0,0,0.08);
 }
 label{
-  font-weight:bold;
+  font-weight:700;
   display:block;
-  margin-top:12px;
+  margin-top:14px;
 }
-input,textarea{
+input,textarea,select{
   width:100%;
-  padding:12px;
-  margin-top:6px;
-  border:1px solid #ddd;
-  border-radius:10px;
   box-sizing:border-box;
+  padding:13px;
+  border:1px solid #d9e2dc;
+  border-radius:12px;
+  margin-top:6px;
   font-size:16px;
 }
 textarea{
-  min-height:70px;
+  min-height:72px;
 }
 button{
   width:100%;
+  margin-top:20px;
   padding:16px;
-  font-size:18px;
-  font-weight:bold;
-  color:white;
-  background:#27ae60;
   border:none;
-  border-radius:14px;
-  margin-top:18px;
+  border-radius:16px;
+  background:#16a34a;
+  color:white;
+  font-size:18px;
+  font-weight:800;
 }
 .score{
-  font-size:34px;
-  font-weight:bold;
-  color:#27ae60;
+  font-size:42px;
+  font-weight:900;
+  color:#16a34a;
 }
-.tag{
-  background:#eafaf1;
-  padding:8px 10px;
-  border-radius:10px;
-  margin:6px 0;
+.badge{
+  display:inline-block;
+  background:#dcfce7;
+  color:#166534;
+  padding:7px 10px;
+  border-radius:999px;
+  margin:4px 4px 4px 0;
+  font-size:14px;
+  font-weight:700;
 }
-.warning{
-  background:#fff4e5;
+.item{
+  padding:12px;
+  border-radius:12px;
+  margin:8px 0;
+  background:#f0fdf4;
+}
+.warn{
+  background:#fff7ed;
+}
+.danger{
+  background:#fef2f2;
+}
+.small{
+  color:#666;
+  font-size:13px;
 }
 </style>
 </head>
+
 <body>
 <div class="container">
 
-<div class="header">
+<div class="hero">
   <h1>🍱 MealCoach AI</h1>
-  <p>今日の食事を入力すると、ダイエット目線で診断します。</p>
+  <p>食事・歩数・体重を入力すると、ダイエット目線で今日の内容を100点満点で診断します。</p>
 </div>
 
 <div class="card">
+  <label>目的</label>
+  <select id="goal">
+    <option value="fatloss">体脂肪を落としたい</option>
+    <option value="maintain">健康的に整えたい</option>
+    <option value="muscle">筋肉をつけたい</option>
+  </select>
+
   <label>体重（kg）</label>
   <input type="number" id="weight" placeholder="例：65">
 
@@ -98,7 +131,11 @@ button{
   <label>夕食</label>
   <textarea id="dinner" placeholder="例：焼き魚、味噌汁、野菜"></textarea>
 
+  <label>間食・お酒</label>
+  <textarea id="snack" placeholder="例：チョコ、ビール、プロテインなど"></textarea>
+
   <button onclick="analyze()">診断する</button>
+  <p class="small">※AI風の簡易診断です。医療・栄養指導ではありません。</p>
 </div>
 
 <div id="result"></div>
@@ -107,98 +144,143 @@ button{
 
 <script>
 function analyze(){
+  const goal = document.getElementById("goal").value;
   const weight = document.getElementById("weight").value;
   const steps = Number(document.getElementById("steps").value) || 0;
   const breakfast = document.getElementById("breakfast").value;
   const lunch = document.getElementById("lunch").value;
   const dinner = document.getElementById("dinner").value;
-  const text = (breakfast + " " + lunch + " " + dinner).toLowerCase();
+  const snack = document.getElementById("snack").value;
+  const text = (breakfast+" "+lunch+" "+dinner+" "+snack).toLowerCase();
 
   let score = 60;
   let good = [];
-  let bad = [];
+  let improve = [];
   let tomorrow = [];
+  let tags = [];
 
-  const proteinWords = ["鶏","胸肉","ささみ","卵","納豆","豆腐","魚","鮭","まぐろ","ツナ","プロテイン","ヨーグルト","オイコス","肉"];
-  const vegWords = ["野菜","サラダ","ブロッコリー","ほうれん草","白菜","キャベツ","トマト","きのこ","わかめ","海藻"];
-  const fatWords = ["揚げ","唐揚げ","ポテト","ラーメン","ケーキ","菓子","チョコ","ピザ","ハンバーガー","マヨ","脂","焼肉"];
-  const carbWords = ["ご飯","白米","玄米","オートミール","さつまいも","そば","うどん","パン"];
+  const protein = ["鶏","胸肉","ささみ","卵","納豆","豆腐","魚","鮭","まぐろ","ツナ","肉","牛","豚","プロテイン","ヨーグルト","オイコス","ギリシャ"];
+  const veg = ["野菜","サラダ","ブロッコリー","ほうれん草","白菜","キャベツ","トマト","きのこ","わかめ","海藻","味噌汁","みそ汁"];
+  const fat = ["揚げ","唐揚げ","ポテト","ラーメン","ピザ","マヨ","ケーキ","チョコ","菓子","ハンバーガー","焼肉","カルビ","クリーム"];
+  const carb = ["ご飯","白米","玄米","米","オートミール","さつまいも","そば","うどん","パン","パスタ"];
+  const alcohol = ["酒","ビール","ハイボール","ワイン","サワー","酎ハイ"];
 
-  let proteinCount = proteinWords.filter(w => text.includes(w)).length;
-  let vegCount = vegWords.filter(w => text.includes(w)).length;
-  let fatCount = fatWords.filter(w => text.includes(w)).length;
-  let carbCount = carbWords.filter(w => text.includes(w)).length;
+  const p = protein.filter(w=>text.includes(w)).length;
+  const v = veg.filter(w=>text.includes(w)).length;
+  const f = fat.filter(w=>text.includes(w)).length;
+  const c = carb.filter(w=>text.includes(w)).length;
+  const a = alcohol.filter(w=>text.includes(w)).length;
 
-  if(steps >= 8000){
+  if(steps >= 10000){
+    score += 20;
+    good.push("歩数が10,000歩以上で活動量はかなり良いです。");
+    tags.push("歩数◎");
+  }else if(steps >= 8000){
     score += 15;
-    good.push("歩数が8,000歩以上で活動量は良いです。");
+    good.push("歩数が8,000歩以上で脂肪燃焼に良い活動量です。");
+    tags.push("歩数○");
+  }else if(steps >= 5000){
+    score += 5;
+    improve.push("歩数は最低限ありますが、もう少し増やせると良いです。");
+    tomorrow.push("明日は8,000歩を目標にしましょう。");
   }else{
     score -= 10;
-    bad.push("歩数が少なめです。脂肪燃焼のために活動量を増やしましょう。");
+    improve.push("歩数が少なめです。消費カロリーが下がりやすい日です。");
     tomorrow.push("まずは今日より＋2,000歩を目標にしましょう。");
   }
 
-  if(proteinCount >= 3){
-    score += 15;
-    good.push("タンパク質をしっかり意識できています。");
-  }else if(proteinCount >= 1){
-    score += 5;
-    good.push("タンパク質は入っていますが、もう少し増やせると良いです。");
-    tomorrow.push("毎食、卵・魚・鶏肉・納豆・豆腐のどれかを入れましょう。");
+  if(p >= 3){
+    score += 18;
+    good.push("タンパク質をかなり意識できています。");
+    tags.push("タンパク質◎");
+  }else if(p >= 1){
+    score += 8;
+    good.push("タンパク質は入っています。毎食入るとさらに良いです。");
+    tomorrow.push("卵・納豆・魚・鶏肉・豆腐を毎食どれか1つ入れましょう。");
+    tags.push("タンパク質○");
   }else{
     score -= 15;
-    bad.push("タンパク質が不足している可能性があります。");
+    improve.push("タンパク質が不足している可能性があります。");
     tomorrow.push("朝か昼に卵・納豆・鶏肉・魚を追加しましょう。");
   }
 
-  if(vegCount >= 2){
-    score += 10;
-    good.push("野菜・海藻類が入っていてバランスが良いです。");
+  if(v >= 2){
+    score += 12;
+    good.push("野菜・海藻・味噌汁などが入り、バランスが良いです。");
+    tags.push("野菜○");
+  }else{
+    score -= 8;
+    improve.push("野菜や食物繊維が少なめです。満腹感と腸内環境のために追加しましょう。");
+    tomorrow.push("サラダ・味噌汁・海藻・野菜スープを1品追加しましょう。");
+  }
+
+  if(c >= 1){
+    score += 5;
+    good.push("炭水化物も入っていて、極端な制限になっていません。");
   }else{
     score -= 5;
-    bad.push("野菜や食物繊維が少なめです。");
-    tomorrow.push("サラダ・味噌汁・海藻を1品追加しましょう。");
+    improve.push("炭水化物が少なすぎる可能性があります。代謝やトレーニングの質に注意です。");
   }
 
-  if(fatCount >= 2){
-    score -= 15;
-    bad.push("脂質が高くなりやすい内容です。翌日は調整しましょう。");
-    tomorrow.push("明日は揚げ物・ラーメン・菓子類を控えめにしましょう。");
+  if(f >= 2){
+    score -= 18;
+    improve.push("脂質が高くなりやすい内容です。翌日は調整しましょう。");
+    tomorrow.push("明日は揚げ物・ラーメン・菓子・脂身の多い肉を控えめにしましょう。");
+    tags.push("脂質注意");
+  }else if(f === 1){
+    score -= 6;
+    improve.push("脂質がやや高くなる可能性があります。量に注意しましょう。");
   }
 
-  if(carbCount >= 1){
-    good.push("炭水化物も入っているので、極端な制限になっていません。");
-  }else{
-    bad.push("炭水化物が少なすぎる可能性があります。代謝低下に注意です。");
+  if(a >= 1){
+    score -= 10;
+    improve.push("お酒が入っているため、むくみ・食欲増加・睡眠の質低下に注意です。");
+    tomorrow.push("飲酒翌日は水分を多めにし、脂質を控えめにしましょう。");
+    tags.push("飲酒あり");
+  }
+
+  if(goal === "muscle"){
+    tomorrow.push("筋肉をつけたい場合は、毎食タンパク質＋炭水化物をセットにしましょう。");
+  }else if(goal === "fatloss"){
+    tomorrow.push("体脂肪を落とすなら、脂質を抑えて歩数8,000歩以上を継続しましょう。");
   }
 
   if(score > 100) score = 100;
   if(score < 0) score = 0;
 
-  if(good.length === 0) good.push("食事記録をつけられていること自体が良いスタートです。");
-  if(bad.length === 0) bad.push("大きな崩れは少ないです。このまま継続しましょう。");
+  let rank = "";
+  if(score >= 90) rank = "かなり良い内容です。継続できれば体は変わります。";
+  else if(score >= 75) rank = "良い内容です。あと少し整えるとさらに痩せやすいです。";
+  else if(score >= 60) rank = "普通です。タンパク質・野菜・歩数のどれかを改善しましょう。";
+  else rank = "改善ポイントが多めです。明日は1つだけ整えればOKです。";
+
+  if(good.length === 0) good.push("食事を記録できていること自体が良いスタートです。");
+  if(improve.length === 0) improve.push("大きな崩れはありません。この調子で継続しましょう。");
   if(tomorrow.length === 0) tomorrow.push("明日もタンパク質・野菜・歩数を意識しましょう。");
+  if(tags.length === 0) tags.push("記録OK");
 
   document.getElementById("result").innerHTML = `
     <div class="card">
       <h2>診断結果</h2>
       <div class="score">${score}点</div>
-      <p>体重：${weight ? weight + "kg" : "未入力"} / 歩数：${steps}歩</p>
+      <p>${rank}</p>
+      <div>${tags.map(t=>`<span class="badge">${t}</span>`).join("")}</div>
+      <p class="small">体重：${weight ? weight+"kg" : "未入力"} / 歩数：${steps}歩</p>
     </div>
 
     <div class="card">
       <h3>✅ 良かった点</h3>
-      ${good.map(item => `<div class="tag">${item}</div>`).join("")}
+      ${good.map(x=>`<div class="item">${x}</div>`).join("")}
     </div>
 
     <div class="card">
       <h3>⚠️ 改善点</h3>
-      ${bad.map(item => `<div class="tag warning">${item}</div>`).join("")}
+      ${improve.map(x=>`<div class="item warn">${x}</div>`).join("")}
     </div>
 
     <div class="card">
       <h3>🎯 明日の課題</h3>
-      ${tomorrow.map(item => `<div class="tag">${item}</div>`).join("")}
+      ${tomorrow.map(x=>`<div class="item">${x}</div>`).join("")}
     </div>
   `;
 }
