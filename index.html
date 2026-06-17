@@ -1,30 +1,129 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MealCoach AI</title>
-</head>
-<body>
-<h1>MealCoach AI</h1>
 
-<p>体重</p>
+<style>
+body{
+font-family: Arial,sans-serif;
+max-width:700px;
+margin:auto;
+padding:20px;
+background:#f5f5f5;
+}
+
+.card{
+background:white;
+padding:15px;
+border-radius:10px;
+margin-bottom:15px;
+box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+input,textarea{
+width:100%;
+padding:10px;
+margin-top:5px;
+margin-bottom:10px;
+box-sizing:border-box;
+}
+
+button{
+width:100%;
+padding:15px;
+font-size:18px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+}
+
+.result{
+background:white;
+padding:15px;
+border-radius:10px;
+margin-top:15px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🍱 MealCoach AI</h1>
+<p>今日の食事を入力してください</p>
+
+<div class="card">
+<label>体重(kg)</label>
 <input type="number" id="weight">
 
-<p>歩数</p>
+<label>歩数</label>
 <input type="number" id="steps">
 
-<button onclick="analyze()">診断する</button>
+<label>朝食</label>
+<textarea id="breakfast"></textarea>
 
-<p id="result"></p>
+<label>昼食</label>
+<textarea id="lunch"></textarea>
+
+<label>夕食</label>
+<textarea id="dinner"></textarea>
+
+<button onclick="analyze()">診断する</button>
+</div>
+
+<div id="result" class="result"></div>
 
 <script>
-function analyze(){
-  let weight = document.getElementById("weight").value;
-  let steps = document.getElementById("steps").value;
 
-  document.getElementById("result").innerHTML =
-  "体重 " + weight + "kg<br>歩数 " + steps + "歩<br><br>今日も頑張りましょう！";
+function analyze(){
+
+let weight=document.getElementById("weight").value;
+let steps=parseInt(document.getElementById("steps").value)||0;
+
+let breakfast=document.getElementById("breakfast").value;
+let lunch=document.getElementById("lunch").value;
+let dinner=document.getElementById("dinner").value;
+
+let score=60;
+
+if(steps>=8000) score+=15;
+if(steps>=10000) score+=10;
+
+let text=(breakfast+lunch+dinner).toLowerCase();
+
+if(text.includes("卵")) score+=5;
+if(text.includes("納豆")) score+=5;
+if(text.includes("鶏")) score+=5;
+if(text.includes("サラダ")) score+=5;
+if(text.includes("野菜")) score+=5;
+
+if(score>100) score=100;
+
+let good="タンパク質を意識できています。";
+let improve="野菜と水分を意識しましょう。";
+let tomorrow="8,000歩以上と毎食タンパク質を目標にしましょう。";
+
+if(steps<5000){
+improve="歩数が少なめです。活動量を増やしましょう。";
 }
+
+document.getElementById("result").innerHTML=
+`
+<h2>総合評価 ${score}点</h2>
+
+<h3>良い点</h3>
+<p>${good}</p>
+
+<h3>改善点</h3>
+<p>${improve}</p>
+
+<h3>明日の課題</h3>
+<p>${tomorrow}</p>
+`;
+
+}
+
 </script>
 
 </body>
